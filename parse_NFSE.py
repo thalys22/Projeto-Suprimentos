@@ -1,6 +1,6 @@
 import pandas as pd
 from openpyxl import load_workbook
-from parse_NF import read_and_unmerge_excel, normalize_header
+from parse_NF import read_and_unmerge_excel, normalize_header, drop_empty_columns_df
 
 FILEPATH = "data/medicoes.xlsx"
 SHEET_NAME = "Relatório"
@@ -41,6 +41,8 @@ def extract_blocks(rows):
 def parse_excel_medicoes():
   rows = read_and_unmerge_excel(FILEPATH, SHEET_NAME)
   df = extract_blocks(rows)
+  df = drop_empty_columns_df(df)
+  
   return df
 
 if __name__ == "__main__":
