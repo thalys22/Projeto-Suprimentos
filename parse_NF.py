@@ -2,12 +2,12 @@ import pandas as pd
 from openpyxl import load_workbook
 
 
-FILE_PATH = "data/MovimentoDeEstoque.xlsx"
+FILE_PATH = "data/notasFiscais.xlsx"
 SHEET_NAME = "Relatório"
 
-def read_and_unmerge_excel():
-  wb = load_workbook(FILE_PATH, data_only=True)
-  ws = wb[SHEET_NAME]
+def read_and_unmerge_excel(file_path, sheet_name):
+  wb = load_workbook(file_path, data_only=True)
+  ws = wb[sheet_name]
   
   merged_ranges = list(ws.merged_cells.ranges)
   for merged in merged_ranges:
@@ -124,7 +124,7 @@ def drop_empty_columns_df(df):
   return df.dropna(axis=1, how="all")
     
 def parse_excel_movimentos():
-  rows = read_and_unmerge_excel()
+  rows = read_and_unmerge_excel(FILE_PATH, SHEET_NAME)
   df = extract_blocks(rows)
   df = drop_empty_columns_df(df)
   df = clean_df(df)
@@ -135,8 +135,6 @@ def parse_excel_movimentos():
   
   return df 
 
-
-  
 if __name__ == "__main__":
   df = parse_excel_movimentos()
   nome_arquivo = 'data/data_frame.xlsx'
