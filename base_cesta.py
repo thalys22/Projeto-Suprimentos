@@ -1,5 +1,5 @@
 import pandas as pd
-from parse_NF import read_and_unmerge_excel, drop_empty_columns_df, normalize_header
+from parse_NF import read_and_unmerge_excel, drop_empty_columns_df, normalize_header, split_insumo, clean_df
 FILEPATH = "data/baseCesta.xlsx"
 SHEET_NAME = "Relatório"
 
@@ -26,6 +26,8 @@ def parse_excel_apropriacoes():
   df = extract_blocks(rows)
   df = drop_empty_columns_df(df)
   df = del_columns(df)
+  df = clean_df(df)
+  df = split_insumo(df)
   
   return df
 
