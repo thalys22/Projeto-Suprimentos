@@ -5,6 +5,20 @@ from parse_NF import read_and_unmerge_excel, normalize_header, drop_empty_column
 FILEPATH = "data/medicoes.xlsx"
 SHEET_NAME = "Relatório"
 
+def split_fornecedor(df):
+  if "fornecedor" not in df.columns:
+    return df
+  
+  split_data = df["fornecedor"].astype(str).str.split(" - ",n=1, expand=True)
+  df["codigo_fornecedor"] = split_data[0].str.strip()
+  if split_data.shape[1] > 1:
+    df["descricao_fornecedor"] = split_data[1].str.strip()
+    
+  else:
+    df["descricao_fornecedor"] = None
+  
+  df = df.drop(columns=["fornecedor"])
+  return df
 
 def extract_blocks(rows):
   data = []
@@ -42,12 +56,13 @@ def parse_excel_medicoes():
   rows = read_and_unmerge_excel(FILEPATH, SHEET_NAME)
   df = extract_blocks(rows)
   df = drop_empty_columns_df(df)
+  df = split_fornecedor(df)
   
   return df
 
 if __name__ == "__main__":
   df = parse_excel_medicoes()
-  output_file = "data/data_frame_medicoes.xlsx"
+  output_file = "data/2-data_frame_medicoes.xlsx"
   df.to_excel(output_file, index=False)
   
   print(f"Planilha '{output_file} criada com sucesso!")

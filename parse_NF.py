@@ -117,6 +117,8 @@ def split_insumo(df):
     df["descricao_insumo"] = split_data[1].str.strip()
   else:
     df["descricao_insumo"] = None
+  
+  df = df.drop(columns=["insumo"])
     
   return df
 
@@ -137,7 +139,7 @@ def parse_excel_movimentos():
 
 if __name__ == "__main__":
   df = parse_excel_movimentos()
-  nome_arquivo = 'data/data_frame.xlsx'
+  nome_arquivo = 'data/1-data_frame_NF.xlsx'
   df.to_excel(nome_arquivo, index=False)
   print(f"Planilha '{nome_arquivo}' criada com sucesso!")
   
