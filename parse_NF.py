@@ -2,7 +2,7 @@ import pandas as pd
 from openpyxl import load_workbook
 
 
-FILE_PATH = "data/notasFiscais.xlsx"
+FILE_PATH = "data/base/notasFiscais.xlsx"
 SHEET_NAME = "Relatório"
 
 def read_and_unmerge_excel(file_path, sheet_name):
@@ -41,7 +41,9 @@ def extract_blocks(rows):
   for row in rows:
     
     if (row and isinstance(row[0],str) and "Centro de custo" in row[0]):
-      current_cc = row[3]
+      cc_value = row[3]
+      if (isinstance(cc_value, str) and "obra" in cc_value.lower()):
+        current_cc = cc_value
       
     if row and row[0] == "Data do movimento":
       current_date  = pd.to_datetime(row[3], dayfirst=True)
@@ -50,7 +52,7 @@ def extract_blocks(rows):
       header = normalize_header(row)
       continue
     
-    if (header and row and isinstance(row[0], str) and row[0].startswith("NF")):
+    if (header and row and isinstance(row[0], str) and row[0].startswith("NF")) and current_cc:
       record = dict(zip(header, row))
       record["data_movimento"] = current_date
       record["centro_custo"] = current_cc
@@ -79,23 +81,6 @@ def rename_columns(df):
     "total_2": "total_unidade_basica",          
   })
   
-'''def cast_numeric_columns(df):
-  numeric_cols = [
-    "quantidade",
-    "quantidade_unidade_basica",
-    "preco_unitario",
-    "preco_unitario_unidade_basica",
-    "total",
-    "total_unidade_basica",
-  ]
-  
-  for col in numeric_cols:
-    if col in df.columns:
-      df[col] = (
-        df[col].astype(str).str.replace(".","", regex=False).str.replace(",",".", regex=False).astype(float)
-      )
-  return df'''
-
 def clean_units(df):
     for col in ["unidade", "unidade_basica"]:
         if col in df.columns:
@@ -124,6 +109,15 @@ def split_insumo(df):
 
 def drop_empty_columns_df(df):
   return df.dropna(axis=1, how="all")
+
+def create_regional(df):
+  if "centro_custo" not in df.columns:
+    return df
+  split_data = df["centro_custo"].astype(str).str.extract(r"^[^-]+-([^-]+)-")
+  df["regional"] = split_data[0].str.strip()
+  df.loc[df["regional"].str.lower().str.contains("mangabeiras|vista aruana", na=False), "regional"] = "SE"
+  return df
+    
     
 def parse_excel_movimentos():
   rows = read_and_unmerge_excel(FILE_PATH, SHEET_NAME)
@@ -131,9 +125,9 @@ def parse_excel_movimentos():
   df = drop_empty_columns_df(df)
   df = clean_df(df)
   df = rename_columns(df)
-  #df = cast_numeric_columns(df)
   df = clean_units(df)
   df = split_insumo(df)
+  df = create_regional(df)
   
   return df 
 
@@ -142,5 +136,4 @@ if __name__ == "__main__":
   nome_arquivo = 'data/1-data_frame_NF.xlsx'
   df.to_excel(nome_arquivo, index=False)
   print(f"Planilha '{nome_arquivo}' criada com sucesso!")
-  
   

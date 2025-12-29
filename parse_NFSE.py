@@ -1,8 +1,8 @@
 import pandas as pd
 from openpyxl import load_workbook
-from parse_NF import read_and_unmerge_excel, normalize_header, drop_empty_columns_df
+from parse_NF import read_and_unmerge_excel, normalize_header, drop_empty_columns_df, create_regional
 
-FILEPATH = "data/medicoes.xlsx"
+FILEPATH = "data/base/medicoes.xlsx"
 SHEET_NAME = "Relatório"
 
 def split_fornecedor(df):
@@ -30,7 +30,9 @@ def extract_blocks(rows):
   
   for row in rows:
     if row and isinstance(row[0], str) and row[0] == "Obra":
-      current_cc = row[2]
+      current_value = row[2]
+      if (isinstance(current_value, str) and "obra" in current_value.lower() and not "gerencia" in current_value.lower()):
+        current_cc = current_value
       
     if row and any(isinstance(cell, str) and cell.strip() == "Data da medição" for cell in row):
       current_date = pd.to_datetime(row[16], dayfirst=True)
@@ -43,7 +45,7 @@ def extract_blocks(rows):
       continue  
     
 
-    if (header and row and isinstance(row[0], str) and row[0].startswith("00")):
+    if (header and row and isinstance(row[0], str) and row[0].startswith("00") and current_cc):
       record = dict(zip(header, row))
       record["data_movimento"] = current_date
       record["centro_custo"] = current_cc
@@ -57,7 +59,7 @@ def parse_excel_medicoes():
   df = extract_blocks(rows)
   df = drop_empty_columns_df(df)
   df = split_fornecedor(df)
-  
+  df = create_regional(df)
   return df
 
 if __name__ == "__main__":
