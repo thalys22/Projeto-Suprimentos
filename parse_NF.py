@@ -1,5 +1,6 @@
 import pandas as pd
 from openpyxl import load_workbook
+from unidecode import unidecode
 
 
 FILE_PATH = "data/base/notasFiscais.xlsx"
@@ -61,7 +62,7 @@ def extract_blocks(rows):
   return pd.DataFrame(data)
       
 def clean_df(df):
-  df.columns = (df.columns.astype(str).str.strip().str.lower().str.replace(" ","_").str.replace(".","", regex=False))
+  df.columns = (df.columns.astype(str).str.strip().str.lower().map(unidecode).str.replace(" ","_").str.replace(".","", regex=False))
   return df
 
 def rename_columns(df):
@@ -117,8 +118,16 @@ def create_regional(df):
   df["regional"] = split_data[0].str.strip()
   df.loc[df["regional"].str.lower().str.contains("mangabeiras|vista aruana", na=False), "regional"] = "SE"
   return df
-    
-    
+
+def split_movimento(df):
+    if "movimento" not in df.columns:
+        return df
+
+    df["movimento"] = (df["movimento"].astype(str).str.split("-", n=1).str[0])
+
+    return df
+
+
 def parse_excel_movimentos():
   rows = read_and_unmerge_excel(FILE_PATH, SHEET_NAME)
   df = extract_blocks(rows)
@@ -128,6 +137,7 @@ def parse_excel_movimentos():
   df = clean_units(df)
   df = split_insumo(df)
   df = create_regional(df)
+  df = split_movimento(df)
   
   return df 
 
