@@ -1,6 +1,6 @@
 import pandas as pd
 from openpyxl import load_workbook
-from parse_NF import read_and_unmerge_excel, normalize_header, drop_empty_columns_df, create_regional
+from parse_NF import read_and_unmerge_excel, normalize_header, drop_empty_columns_df, create_regional, clean_df
 
 FILEPATH = "data/base/medicoes.xlsx"
 SHEET_NAME = "Relatório"
@@ -60,6 +60,7 @@ def parse_excel_medicoes():
   df = drop_empty_columns_df(df)
   df = split_fornecedor(df)
   df = create_regional(df)
+  df = clean_df(df)
   return df
 
 if __name__ == "__main__":

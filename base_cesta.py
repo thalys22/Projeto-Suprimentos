@@ -67,7 +67,7 @@ def process_single_file(file_path: Path) -> pd.DataFrame:
     return df
 
 
-def parse_excel_base_cesta_consolidado():
+def parse_excel_apropriacoes():
     all_dfs = []
 
     for file_path in BASE_DIR.glob("*.xlsx"):
@@ -82,7 +82,7 @@ def parse_excel_base_cesta_consolidado():
 
 
 if __name__ == "__main__":
-    df_final = parse_excel_base_cesta_consolidado()
+    df_final = parse_excel_apropriacoes()
 
     output_file = "data/3-data_frame_cesta_consolidado.xlsx"
     df_final.to_excel(output_file, index=False)
