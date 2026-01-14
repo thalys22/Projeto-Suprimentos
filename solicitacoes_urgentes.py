@@ -1,6 +1,7 @@
 import pandas as pd
 from openpyxl import load_workbook
 from parse_NF import clean_df
+from parse_NFSE import split_fornecedor
 
 FILE_PATH = "data/base/solicitacoesUrgentes.xlsx"
 SHEET_NAME = "Sheet1"
@@ -30,8 +31,8 @@ def extract_blocks(rows):
 
 
 def converter_data(df):
-    df["Data para chegada à obra"] = pd.to_datetime(
-        df["Data para chegada à obra"],
+    df["Data do pedido"] = pd.to_datetime(
+        df["Data do pedido"],
         dayfirst=True,
         errors="coerce"
     )
@@ -41,13 +42,26 @@ def converter_data(df):
         dayfirst=True,
         errors="coerce"
     )
+    
+    df["Previsão de entrega"] = pd.to_datetime(
+        df["Previsão de entrega"],
+        dayfirst=True,
+        errors="coerce"
+    )
+    
+    df["Data entrega na obra"] = pd.to_datetime(
+        df["Previsão de entrega"],
+        dayfirst=True,
+        errors="coerce"
+    )
+    
 
     return df
 
 
 def insert_urgencia(df):
     df["dias"] = (
-        df["Data para chegada à obra"] - df["Data da solicitação"]
+        df["Previsão de entrega"] - df["Data da solicitação"]
     ).dt.days
 
     df["urgencia"] = "Não urgente"
@@ -55,6 +69,27 @@ def insert_urgencia(df):
     df.loc[df["dias"] < 25, "urgencia"] = "Urgente"
 
     return df
+  
+def split_insumo(df):
+    if "Descrição do insumo" not in df.columns:
+        return df
+
+    split_data = (
+        df["Descrição do insumo"]
+        .astype(str)
+        .str.split(" - ", n=1, expand=True)
+    )
+
+    df["codigo_insumo"] = split_data[0].str.strip()
+
+    if split_data.shape[1] > 1:
+        df["descricao_insumo"] = split_data[1].str.strip()
+    else:
+        df["descricao_insumo"] = None
+
+    df = df.drop(columns=["Descrição do insumo"])
+    return df
+
 
     
 def start():
@@ -64,14 +99,33 @@ def start():
     df = df[df["Obra"].astype(str).str.lower().str.contains("obra", na=False)]
     df = converter_data(df)
     df = insert_urgencia(df)
+    df = split_insumo(df)
+    
+    COLUNAS = [
+    "Nº da Solicitação",
+    "Obra",
+    "codigo_insumo",
+    "descricao_insumo",
+    "Data da solicitação",
+    "N° do Pedido",
+    "Data do pedido",
+    "Comprador",
+    "Cód. Fornecedor",
+    "Previsão de entrega",
+    "Data entrega na obra",
+    "N° da Nota fiscal",
+    "Unidade de movimento"
+]
+    df = df[COLUNAS]
 
     df = df.rename(columns={
         "Nº da Solicitação": "numero_solicitacao",
-        "Cód. Insumo": "codigo_insumo",
-        "Descrição do insumo": "descricao_insumo",
+        "insumo": "descricao_insumo",
         "Data da solicitação": "data_solicitacao",
-        "Data para chegada à obra": "data_chegada_obra",
+        "Previsão de entrega": "previsao_de_entrega",
         "Cód. Fornecedor": "codigo_fornecedor",
+        "Data do pedido": "data_pedido",
+        "Data entrega na obra": "data_entrega_na_obra"
     })
 
     return df
@@ -79,7 +133,6 @@ def start():
 
 if __name__ == "__main__":
   df = start()
-  nome_arquivo = 'data/5-urgencias.xlsx'
+  nome_arquivo = 'data/6-urgencias.xlsx'
   df.to_excel(nome_arquivo, index=False)
   print(f"Planilha '{nome_arquivo}' criada com sucesso!")
-  

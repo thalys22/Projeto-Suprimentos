@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS nf_movimentos (
     movimento TEXT,
     codigo_fornecedor INTEGER,
     quantidade NUMERIC,
-    un TEXT,
+    unidade TEXT,
     preco_unitario NUMERIC,
     total NUMERIC,
     data_movimento TIMESTAMP,
@@ -68,17 +68,21 @@ CREATE TABLE IF NOT EXISTS solicitacoes (
     codigo_insumo INTEGER,
     descricao_insumo TEXT,
     data_solicitacao TIMESTAMP,
-    data_chegada_obra TIMESTAMP,
-    numero_pedido INTEGER,
+    previsao_de_entrega TIMESTAMP,
     data_pedido TIMESTAMP,
+    data_entrega_na_obra TIMESTAMP,
+    numero_pedido INTEGER,
     codigo_fornecedor INTEGER,
     nota_fiscal TEXT,
+    comprador TEXT,
     dias INTEGER,
     urgencia TEXT,
     centro_custo TEXT,
     FOREIGN KEY (codigo_fornecedor) REFERENCES fornecedores (codigo_fornecedor),
     FOREIGN KEY (codigo_insumo) REFERENCES grupo_insumo (codigo_insumo)
+
 );
+
 """
 
 with engine.begin() as conn:
