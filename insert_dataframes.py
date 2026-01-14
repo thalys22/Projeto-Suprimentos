@@ -1,5 +1,7 @@
 # insert_dataframes.py
+
 from db import engine
+from deduplication import filter_new_rows
 
 from parse_NF import parse_excel_movimentos
 from parse_NFSE import parse_excel_medicoes
@@ -9,56 +11,91 @@ from fornecedor import unmerge_path as parse_fornecedores
 from grupo_insumo import unmerge_path as parse_grupo_insumo
 
 
-def insert_nf_movimentos():
-    df = parse_excel_movimentos()
-    df.to_sql("nf_movimentos", engine, if_exists="append", index=False)
+# =========================================================
+# CONFIGURAÇÃO CENTRAL DAS TABELAS
+# =========================================================
+# Cada entrada define:
+# - parser: função que retorna o DataFrame JÁ NORMALIZADO
+# - keys: chave natural (business key) para deduplicação
+# =========================================================
+
+TABLES_CONFIG = {
+    "fornecedores": {
+        "parser": parse_fornecedores,
+        "keys": ["codigo_fornecedor"],
+    },
+    "grupo_insumo": {
+        "parser": parse_grupo_insumo,
+        "keys": ["codigo_insumo"],
+    },
+    "nf_movimentos": {
+        "parser": parse_excel_movimentos,
+        "keys": ["movimento", "codigo_insumo", "centro_custo"],
+    },
+    "nfse_medicoes": {
+        "parser": parse_excel_medicoes,
+        "keys": ["descricao_insumo", "data_movimento", "centro_custo"],
+    },
+    "base_cesta_apropriacoes": {
+        "parser": parse_excel_apropriacoes,
+        "keys": ["codigo_insumo", "centro_custo"],
+    },
+    "solicitacoes": {
+        "parser": parse_solicitacoes,
+        "keys": ["numero_solicitacao", "codigo_insumo"],
+    },
+}
 
 
-def insert_nfse_medicoes():
-    df = parse_excel_medicoes()
-    df.to_sql("nfse_medicoes", engine, if_exists="append", index=False)
+# =========================================================
+# INSERÇÃO GENÉRICA POR TABELA
+# =========================================================
+def insert_table(table_name: str, config: dict):
+    print(f"\n📥 Processando tabela: {table_name}")
+
+    # 1️⃣ Executa o parser
+    df = config["parser"]()
+
+    if df is None or df.empty:
+        print(f"⚠ {table_name}: DataFrame vazio — nada a inserir")
+        return
+
+    # 2️⃣ Validação preventiva das colunas-chave
+    missing = set(config["keys"]) - set(df.columns)
+    if missing:
+        raise ValueError(
+            f"[{table_name}] Colunas de chave ausentes no DataFrame: {missing}"
+        )
+
+    # 3️⃣ Deduplicação contra o banco
+    df_new, inserted, discarded = filter_new_rows(
+        df=df,
+        engine=engine,
+        table_name=table_name,
+        key_columns=config["keys"],
+    )
+
+    # 4️⃣ Insert apenas se houver dados novos
+    if df_new.empty:
+        print(f"⚠ {table_name}: nenhuma linha nova")
+        return
+
+    df_new.to_sql(
+        table_name,
+        engine,
+        if_exists="append",
+        index=False,
+    )
+
+    # 5️⃣ Log final
+    print(
+        f"✔ {table_name}: inseridas={inserted} | descartadas={discarded}"
+    )
 
 
-def insert_base_cesta():
-    df = parse_excel_apropriacoes()
-    df.to_sql("base_cesta_apropriacoes", engine, if_exists="append", index=False)
-
-
-def insert_solicitacoes():
-    df = parse_solicitacoes()
-
-    df = df.rename(columns={
-        "Nº da Solicitação": "numero_solicitacao",
-        "Cód. Insumo": "codigo_insumo",
-        "Descrição do insumo": "descricao_insumo",
-        "Data da solicitação": "data_solicitacao",
-        "Data para chegada à obra": "data_chegada",
-        "Cód. Fornecedor": "codigo_fornecedor",
-    })
-
-    df.to_sql("solicitacoes", engine, if_exists="append", index=False)
-
-
-def insert_fornecedores():
-    df = parse_fornecedores()
-    df.to_sql("fornecedores", engine, if_exists="append", index=False)
-
-
-def insert_grupo_insumo():
-    df = parse_grupo_insumo()
-    df.to_sql("grupo_insumo", engine, if_exists="append", index=False)
-
-
+# =========================================================
+# PIPELINE COMPLETO
+# =========================================================
 def insert_all():
-    insert_fornecedores()
-    print("Dados de fornecedores inseridos com sucesso...")
-    insert_grupo_insumo()
-    print("Dados de Grupos de insumo inseridos com sucesso...")
-    insert_nf_movimentos()
-    print("Dados de Notas fiscais inseridos com sucesso...")
-    insert_nfse_medicoes()
-    print("Dados de Notas de Serviço inseridos com sucesso...")
-    insert_base_cesta()
-    print("Dados da base da cesta inseridos com sucesso...")
-    insert_solicitacoes()
-    print("Dados de tipo de solicitações inseridos com sucesso...")
+    for table_name, config in TABLES_CONFIG.items():
+        insert_table(table_name, config)

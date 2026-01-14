@@ -1,5 +1,6 @@
 import pandas as pd
 from openpyxl import load_workbook
+from parse_NF import clean_df
 
 FILE_PATH = "data/base/solicitacoesUrgentes.xlsx"
 SHEET_NAME = "Sheet1"
@@ -59,15 +60,26 @@ def insert_urgencia(df):
 def start():
     rows = read_cells(FILE_PATH, SHEET_NAME)
     df = extract_blocks(rows)
+
     df = df[df["Obra"].astype(str).str.lower().str.contains("obra", na=False)]
     df = converter_data(df)
     df = insert_urgencia(df)
+
+    df = df.rename(columns={
+        "Nº da Solicitação": "numero_solicitacao",
+        "Cód. Insumo": "codigo_insumo",
+        "Descrição do insumo": "descricao_insumo",
+        "Data da solicitação": "data_solicitacao",
+        "Data para chegada à obra": "data_chegada_obra",
+        "Cód. Fornecedor": "codigo_fornecedor",
+    })
+
     return df
 
 
 if __name__ == "__main__":
   df = start()
-  nome_arquivo = 'data/4-urgencias.xlsx'
+  nome_arquivo = 'data/5-urgencias.xlsx'
   df.to_excel(nome_arquivo, index=False)
   print(f"Planilha '{nome_arquivo}' criada com sucesso!")
   

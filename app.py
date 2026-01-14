@@ -1,10 +1,11 @@
+# app.py
 import insert_dataframes
 
 
 def main():
-    print("Inserindo dados no banco...")
+    print("🚀 Iniciando pipeline de carga...")
     insert_dataframes.insert_all()
-    print("✔ Pipeline executado com sucesso")
+    print("\n✅ Pipeline finalizado com sucesso")
 
 
 if __name__ == "__main__":
