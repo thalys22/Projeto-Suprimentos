@@ -41,3 +41,49 @@ SELECT
     END as classe_abc
 FROM calculo_acumulado;
 """
+
+VIEW_CONSOLIDADO_PRECOS = """
+CREATE OR REPLACE VIEW view_consolidado_precos AS
+WITH solicitacoes_urgentes AS (
+    -- Identifica quais insumos em quais obras foram urgentes
+    SELECT DISTINCT 
+        codigo_insumo, 
+        centro_custo 
+    FROM solicitacoes 
+    WHERE urgencia = 'Urgente'
+),
+movimentos_filtrados AS (
+    -- Consolida NF Movimentos (Insumos)
+    SELECT 
+        nf.data_movimento,
+        nf.codigo_insumo,
+        nf.descricao_insumo,
+        nf.quantidade,
+        nf.preco_unitario,
+        nf.total,
+        nf.centro_custo,
+        nf.regional,
+        'NF' as origem
+    FROM nf_movimentos nf
+    LEFT JOIN solicitacoes_urgentes su ON nf.codigo_insumo = su.codigo_insumo AND nf.centro_custo = su.centro_custo
+    WHERE su.codigo_insumo IS NULL -- Filtra apenas os NÃO urgentes
+    
+    UNION ALL
+    
+    -- Consolida NFSE Medições (Serviços/Insumos)
+    SELECT 
+        se.data_movimento,
+        NULL as codigo_insumo, -- NFSE geralmente não tem código de insumo direto
+        se.descricao_insumo,
+        se.quantidade,
+        se.preco_unitario,
+        se.total,
+        se.centro_custo,
+        se.regional,
+        'NFSE' as origem
+    FROM nfse_medicoes se
+    -- Nota: NFSE geralmente não passa pelo fluxo de solicitações urgentes da mesma forma, 
+    -- mas se passar, o filtro abaixo pode ser adaptado.
+)
+SELECT * FROM movimentos_filtrados;
+"""

@@ -1,6 +1,6 @@
 from db import engine
 from sqlalchemy import text
-from views_sql import VIEW_CURVA_ABC
+from views_sql import VIEW_CURVA_ABC, VIEW_CONSOLIDADO_PRECOS
 
 def create_views():
     print("🛠 Preparando para criar views no banco de dados...")
@@ -9,6 +9,9 @@ def create_views():
         with engine.begin() as conn:
             conn.execute(text(VIEW_CURVA_ABC))
             print("✅ View 'view_curva_abc_insumos' criada com sucesso!")
+            
+            conn.execute(text(VIEW_CONSOLIDADO_PRECOS))
+            print("✅ View 'view_consolidado_precos' criada com sucesso!")
     except Exception as e:
         # Se o banco não estiver rodando no sandbox, capturamos o erro de conexão
         # mas confirmamos que o código está pronto.
