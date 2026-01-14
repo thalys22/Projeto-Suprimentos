@@ -1,10 +1,8 @@
 import pandas as pd
-from parse_NF import read_and_unmerge_excel, clean_df
-from base_cesta import del_columns
+from utils import read_and_unmerge_excel, clean_df, del_columns
 
 SHEET_NAME = "Sheet1"
 FILE_PATH = "data/base/grupo_de_insumo.xlsx"
-
 
 def extract_blocks(rows):
     data = []
@@ -18,16 +16,13 @@ def extract_blocks(rows):
 
         if header and row and isinstance(row[0], int):
             unique_key = tuple(row)
-
             if unique_key in seen:
                 continue
-
             seen.add(unique_key)
             record = dict(zip(header, row))
             data.append(record)
 
     return pd.DataFrame(data)
-
 
 def unmerge_path():
     rows = read_and_unmerge_excel(FILE_PATH, SHEET_NAME)
@@ -35,9 +30,7 @@ def unmerge_path():
     df = clean_df(df)
     df = del_columns(df)
     df = df.sort_values(by=["codigo_insumo", "indice_grupo", "grupo_de_insumo"]).reset_index(drop=True)
-
     return df
-
 
 if __name__ == "__main__":
     df = unmerge_path()
