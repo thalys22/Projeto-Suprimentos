@@ -47,12 +47,12 @@ CREATE TABLE IF NOT EXISTS nfse_medicoes (
     FOREIGN KEY (codigo_fornecedor) REFERENCES fornecedores (codigo_fornecedor)
 );
 
-CREATE TABLE IF NOT EXISTS cesta_apropriacoes (
+CREATE TABLE IF NOT EXISTS base_cesta_apropriacoes (
     id SERIAL PRIMARY KEY,
     un TEXT,
     quantidade NUMERIC,
-    preco_unit_medio NUMERIC,
-    preco_total NUMERIC,
+    preco_unitario NUMERIC,
+    total NUMERIC,
     codigo_insumo INTEGER,
     descricao_insumo TEXT,
     centro_custo TEXT,

@@ -4,8 +4,8 @@ VIEW_CURVA_ABC = """
 CREATE OR REPLACE VIEW view_curva_abc_insumos AS
 WITH total_geral AS (
     -- Calcula o valor total de todos os insumos na cesta
-    SELECT SUM(preco_total) as valor_global
-    FROM cesta_apropriacoes
+    SELECT SUM(total) as valor_global
+    FROM base_cesta_apropriacoes
 ),
 insumos_agrupados AS (
     -- Agrupa por insumo e soma os valores
@@ -13,8 +13,8 @@ insumos_agrupados AS (
         codigo_insumo,
         descricao_insumo,
         SUM(quantidade) as qtd_total,
-        SUM(preco_total) as valor_total_insumo
-    FROM cesta_apropriacoes
+        SUM(total) as valor_total_insumo
+    FROM base_cesta_apropriacoes
     GROUP BY codigo_insumo, descricao_insumo
 ),
 calculo_contribuicao AS (
@@ -41,5 +41,3 @@ SELECT
     END as classe_abc
 FROM calculo_acumulado;
 """
-
-# Próximas views serão adicionadas aqui conforme avançarmos
