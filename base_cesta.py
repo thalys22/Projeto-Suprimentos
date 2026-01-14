@@ -46,7 +46,7 @@ def drop_percent_columns(df):
 def create_regional(df):
   if "centro_custo" not in df.columns:
     return df
-  split_data = df["centro_custo"].astype(str).str.extract(r"^([^-]+)")
+  split_data = df["centro_custo"].astype(str).str.extract(r"^[^-]+-([^-]+)-")
   df["regional"] = split_data[0].str.strip()
   df.loc[df["regional"].str.lower().str.contains("mangabeiras|vista aruana", na=False), "regional"] = "SE"
   return df
@@ -63,6 +63,8 @@ def process_single_file(file_path: Path) -> pd.DataFrame:
     df = df.iloc[:-3]
     df["centro_custo"] = file_path.stem
     df = create_regional(df)
+    df = df.rename(columns={"preco_unit_medio": "preco_unitario"})
+    df = df.rename(columns={"preco_total": "total"})
 
     return df
 

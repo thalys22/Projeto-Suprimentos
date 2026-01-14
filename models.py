@@ -2,50 +2,53 @@ from sqlalchemy import text
 from db import engine
 
 sql = """
+-- DIMENSÕES
 CREATE TABLE IF NOT EXISTS fornecedores (
-    codigo INTEGER PRIMARY KEY,
+    codigo_fornecedor INTEGER PRIMARY KEY,
     fornecedor TEXT
 );
 
+CREATE TABLE IF NOT EXISTS grupo_insumo (
+    codigo_insumo INTEGER PRIMARY KEY,
+    insumo TEXT,
+    indice_grupo INTEGER,
+    grupo_de_insumo TEXT
+);
+
+-- FATOS
 CREATE TABLE IF NOT EXISTS nf_movimentos (
+    id SERIAL PRIMARY KEY,
     movimento TEXT,
-    fornecedor INTEGER,
-    ncm TEXT,
-    historico_da_operacao TEXT,
+    codigo_fornecedor INTEGER,
     quantidade NUMERIC,
     unidade TEXT,
     preco_unitario NUMERIC,
-    quantidade_unidade_basica NUMERIC,
-    unidade_basica TEXT,
-    preco_unitario_2 NUMERIC,
     total NUMERIC,
     data_movimento TIMESTAMP,
     centro_custo TEXT,
     codigo_insumo INTEGER,
     descricao_insumo TEXT,
-    regional TEXT
+    regional TEXT,
+    FOREIGN KEY (codigo_fornecedor) REFERENCES fornecedores (codigo_fornecedor),
+    FOREIGN KEY (codigo_insumo) REFERENCES grupo_insumo (codigo_insumo)
 );
 
 CREATE TABLE IF NOT EXISTS nfse_medicoes (
-    referencia TEXT,
-    descricao TEXT,
+    id SERIAL PRIMARY KEY,
+    descricao_insumo TEXT,
     un TEXT,
-    ad TEXT,
-    contratada NUMERIC,
-    acum_anterior NUMERIC,
-    medida NUMERIC,
-    exe NUMERIC,
+    quantidade NUMERIC,
     preco_unitario NUMERIC,
-    acum_anterior_2 NUMERIC,
-    medicao NUMERIC,
+    total NUMERIC,
     data_movimento TIMESTAMP,
     centro_custo TEXT,
     codigo_fornecedor INTEGER,
-    descricao_fornecedor TEXT,
-    regional TEXT
+    regional TEXT,
+    FOREIGN KEY (codigo_fornecedor) REFERENCES fornecedores (codigo_fornecedor)
 );
 
 CREATE TABLE IF NOT EXISTS cesta_apropriacoes (
+    id SERIAL PRIMARY KEY,
     un TEXT,
     quantidade NUMERIC,
     preco_unit_medio NUMERIC,
@@ -53,10 +56,12 @@ CREATE TABLE IF NOT EXISTS cesta_apropriacoes (
     codigo_insumo INTEGER,
     descricao_insumo TEXT,
     centro_custo TEXT,
-    regional TEXT
+    regional TEXT,
+    FOREIGN KEY (codigo_insumo) REFERENCES grupo_insumo (codigo_insumo)
 );
 
 CREATE TABLE IF NOT EXISTS solicitacoes (
+    id SERIAL PRIMARY KEY,
     numero_solicitacao INTEGER,
     codigo_obra INTEGER,
     obra TEXT,
@@ -67,14 +72,16 @@ CREATE TABLE IF NOT EXISTS solicitacoes (
     numero_pedido INTEGER,
     data_pedido TIMESTAMP,
     codigo_fornecedor INTEGER,
-    fornecedor TEXT,
     nota_fiscal TEXT,
     dias INTEGER,
-    urgencia TEXT
+    urgencia TEXT,
+    centro_custo TEXT,
+    FOREIGN KEY (codigo_fornecedor) REFERENCES fornecedores (codigo_fornecedor),
+    FOREIGN KEY (codigo_insumo) REFERENCES grupo_insumo (codigo_insumo)
 );
 """
 
 with engine.begin() as conn:
     conn.execute(text(sql))
 
-print("✅ Tabelas criadas com sucesso")
+print("Tabelas criadas !")

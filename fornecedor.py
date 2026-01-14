@@ -36,9 +36,11 @@ def unmerge_path():
   df = extract_blocks(rows)
   df = clean_df(df)
   df = del_columns(df)
-  df = df[["codigo", "fornecedor"]]
-  df = df.sort_values(by=["codigo", "fornecedor"]).reset_index(drop=True)
-  
+  df = df.rename(columns={"codigo": "codigo_fornecedor"})
+  df = df[["codigo_fornecedor", "fornecedor"]]
+  df = df.sort_values(by=["codigo_fornecedor", "fornecedor"]).reset_index(drop=True)
+
+
   return df
 
 if __name__ == "__main__":

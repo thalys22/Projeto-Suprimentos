@@ -61,6 +61,25 @@ def parse_excel_medicoes():
   df = split_fornecedor(df)
   df = create_regional(df)
   df = clean_df(df)
+  
+  COLUNAS_NFSE = [
+    "descricao",
+    "un",
+    "medida",
+    "preco_unitario",
+    "medicao",
+    "data_movimento",
+    "centro_custo",
+    "codigo_fornecedor",
+    "regional"
+]
+
+  df = df[COLUNAS_NFSE]
+  df = df.rename(columns={"descricao": "descricao_insumo"})
+  df = df.rename(columns={"medida": "quantidade"})
+  df = df.rename(columns={"medicao": "total"})
+
+
   return df
 
 if __name__ == "__main__":

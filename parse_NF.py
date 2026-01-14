@@ -138,6 +138,23 @@ def parse_excel_movimentos():
   df = split_insumo(df)
   df = create_regional(df)
   df = split_movimento(df)
+  COLUNAS_NF = [
+    "movimento",
+    "fornecedor",
+    "quantidade",
+    "unidade",
+    "preco_unitario",
+    "total",
+    "data_movimento",
+    "centro_custo",
+    "codigo_insumo",
+    "descricao_insumo",
+    "regional"
+]
+
+  df = df[COLUNAS_NF]
+  df = df.rename(columns={"fornecedor": "codigo_fornecedor"})
+  df = df.rename(columns={"unidade": "un"})
   
   return df 
 
