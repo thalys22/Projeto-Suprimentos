@@ -50,7 +50,7 @@ def converter_data(df):
     )
     
     df["Data entrega na obra"] = pd.to_datetime(
-        df["Previsão de entrega"],
+        df["Data entrega na obra"],
         dayfirst=True,
         errors="coerce"
     )
@@ -114,7 +114,8 @@ def start():
     "Previsão de entrega",
     "Data entrega na obra",
     "N° da Nota fiscal",
-    "Unidade de movimento"
+    "Unidade de movimento",
+    "urgencia"
 ]
     df = df[COLUNAS]
 
@@ -125,7 +126,8 @@ def start():
         "Previsão de entrega": "previsao_de_entrega",
         "Cód. Fornecedor": "codigo_fornecedor",
         "Data do pedido": "data_pedido",
-        "Data entrega na obra": "data_entrega_na_obra"
+        "Data entrega na obra": "data_entrega_na_obra",
+        "Obra":"centro_custo"
     })
 
     return df
