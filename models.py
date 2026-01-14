@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS nf_movimentos (
     movimento TEXT,
     codigo_fornecedor INTEGER,
     quantidade NUMERIC,
-    unidade TEXT,
+    un TEXT,
     preco_unitario NUMERIC,
     total NUMERIC,
     data_movimento TIMESTAMP,
