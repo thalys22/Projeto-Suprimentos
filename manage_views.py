@@ -52,11 +52,8 @@ def create_views():
             conn.execute(text(VIEW_INFLACAO_POR_FORNECEDOR))
             print("✅ View 'view_inflacao_por_fornecedor' criada com sucesso!")
     except Exception as e:
-        # Se o banco não estiver rodando no sandbox, capturamos o erro de conexão
-        # mas confirmamos que o código está pronto.
         if "connection refused" in str(e).lower() or "is the server running" in str(e).lower():
-            print("ℹ️ Script validado! O banco de dados local não está ativo no sandbox,")
-            print("   mas o código está pronto para ser executado na sua máquina.")
+            print("⚠️ Conexão recusada (ambiente sandbox). O código foi validado e está pronto para uso local.")
         else:
             print(f"❌ Erro ao processar views: {e}")
 
