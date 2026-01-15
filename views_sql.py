@@ -56,6 +56,7 @@ movimentos_filtrados AS (
         nf.total,
         nf.centro_custo,
         nf.regional,
+        nf.codigo_fornecedor::TEXT as codigo_fornecedor,
         'NF' as origem
     FROM nf_movimentos nf
     LEFT JOIN solicitacoes_urgentes su ON nf.codigo_insumo::TEXT = su.codigo_insumo AND nf.centro_custo = su.centro_custo
@@ -72,6 +73,7 @@ movimentos_filtrados AS (
         se.total,
         se.centro_custo,
         se.regional,
+        se.codigo_fornecedor::TEXT as codigo_fornecedor,
         'NFSE' as origem
     FROM nfse_medicoes se
 )
@@ -83,7 +85,7 @@ CREATE OR REPLACE VIEW view_inflacao_mensal AS
 WITH preco_medio_mensal AS (
     SELECT 
         DATE_TRUNC('month', data_movimento) as mes,
-        codigo_insumo::TEXT,
+        codigo_insumo,
         regional,
         SUM(total) / NULLIF(SUM(quantidade), 0) as preco_medio
     FROM view_consolidado_precos
@@ -108,7 +110,7 @@ inflacao_ponderada AS (
         abc.contribuicao_percentual as peso_cesta,
         cv.variacao_percentual * abc.contribuicao_percentual as variacao_ponderada
     FROM calculo_variacao cv
-    JOIN view_curva_abc_insumos abc ON cv.codigo_insumo = abc.codigo_insumo::TEXT
+    JOIN view_curva_abc_insumos abc ON cv.codigo_insumo = abc.codigo_insumo
 )
 SELECT 
     mes,
@@ -145,7 +147,7 @@ CREATE OR REPLACE VIEW view_inflacao_por_insumo AS
 WITH preco_medio_mensal AS (
     SELECT 
         DATE_TRUNC('month', data_movimento) as mes,
-        codigo_insumo::TEXT,
+        codigo_insumo,
         descricao_insumo,
         regional,
         SUM(total) / NULLIF(SUM(quantidade), 0) as preco_medio
@@ -174,7 +176,7 @@ SELECT
     abc.contribuicao_percentual as peso_cesta,
     cv.variacao_percentual * abc.contribuicao_percentual as impacto_inflacao
 FROM calculo_variacao cv
-JOIN view_curva_abc_insumos abc ON cv.codigo_insumo = abc.codigo_insumo::TEXT
+JOIN view_curva_abc_insumos abc ON cv.codigo_insumo = abc.codigo_insumo
 ORDER BY cv.mes DESC, impacto_inflacao DESC;
 """
 
@@ -195,8 +197,8 @@ CREATE OR REPLACE VIEW view_inflacao_por_fornecedor AS
 WITH variacao_fornecedor AS (
     SELECT 
         DATE_TRUNC('month', cp.data_movimento) as mes,
-        cp.codigo_fornecedor::TEXT,
-        cp.codigo_insumo::TEXT,
+        cp.codigo_fornecedor,
+        cp.codigo_insumo,
         SUM(cp.total) / NULLIF(SUM(cp.quantidade), 0) as preco_medio
     FROM view_consolidado_precos cp
     WHERE cp.codigo_insumo IS NOT NULL
@@ -213,7 +215,7 @@ SELECT
     cv.mes,
     AVG(cv.variacao_percentual) as variacao_media_precos
 FROM calculo_variacao cv
-JOIN fornecedores f ON cv.codigo_fornecedor::TEXT = f.codigo_fornecedor::TEXT
+JOIN fornecedores f ON cv.codigo_fornecedor = f.codigo_fornecedor::TEXT
 GROUP BY 1, 2
 ORDER BY cv.mes DESC, variacao_media_precos DESC;
 """
