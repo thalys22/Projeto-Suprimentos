@@ -87,3 +87,73 @@ movimentos_filtrados AS (
 )
 SELECT * FROM movimentos_filtrados;
 """
+
+VIEW_INFLACAO_MENSAL = """
+CREATE OR REPLACE VIEW view_inflacao_mensal AS
+WITH preco_medio_mensal AS (
+    -- Calcula o preço médio de cada insumo por mês e regional
+    SELECT 
+        DATE_TRUNC('month', data_movimento) as mes,
+        codigo_insumo,
+        regional,
+        SUM(total) / NULLIF(SUM(quantidade), 0) as preco_medio
+    FROM view_consolidado_precos
+    WHERE codigo_insumo IS NOT NULL
+    GROUP BY 1, 2, 3
+),
+variacao_precos AS (
+    -- Calcula a variação em relação ao mês anterior (Lag)
+    SELECT 
+        *,
+        LAG(preco_medio) OVER (PARTITION BY codigo_insumo, regional ORDER BY mes) as preco_mes_anterior
+    FROM preco_medio_mensal
+),
+calculo_variacao AS (
+    -- Calcula o percentual de variação
+    SELECT 
+        *,
+        (preco_medio / NULLIF(preco_mes_anterior, 0)) - 1 as variacao_percentual
+    FROM variacao_precos
+),
+inflacao_ponderada AS (
+    -- Cruza com a Curva ABC para pegar os pesos (contribuição_percentual)
+    SELECT 
+        cv.*,
+        abc.contribuicao_percentual as peso_cesta,
+        cv.variacao_percentual * abc.contribuicao_percentual as variacao_ponderada
+    FROM calculo_variacao cv
+    JOIN view_curva_abc_insumos abc ON cv.codigo_insumo = abc.codigo_insumo
+)
+-- Resultado Final: Inflação por Mês e Regional
+SELECT 
+    mes,
+    regional,
+    SUM(variacao_ponderada) as inflacao_mensal_regional,
+    -- Soma de todos os pesos presentes no mês para normalizar se necessário
+    SUM(peso_cesta) as cobertura_cesta 
+FROM inflacao_ponderada
+GROUP BY mes, regional
+ORDER BY mes DESC, regional;
+"""
+
+VIEW_INFLACAO_GLOBAL = """
+CREATE OR REPLACE VIEW view_inflacao_global AS
+WITH dados_ponderados AS (
+    -- Junta a inflação mensal regional com a configuração de unidades
+    SELECT 
+        im.mes,
+        im.regional,
+        im.inflacao_mensal_regional,
+        cr.unidades
+    FROM view_inflacao_mensal im
+    JOIN config_regionais cr ON im.regional = cr.regional
+)
+-- Aplica a fórmula: ((Inf_SE * Un_SE) + (Inf_BA * Un_BA)) / Total_Unidades
+SELECT 
+    mes,
+    SUM(inflacao_mensal_regional * unidades) / NULLIF(SUM(unidades), 0) as inflacao_global_ponderada,
+    SUM(unidades) as total_unidades_base
+FROM dados_ponderados
+GROUP BY mes
+ORDER BY mes DESC;
+"""

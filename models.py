@@ -83,6 +83,17 @@ CREATE TABLE IF NOT EXISTS solicitacoes (
 
 );
 
+CREATE TABLE IF NOT EXISTS config_regionais (
+    regional TEXT PRIMARY KEY,
+    unidades INTEGER,
+    ano_referencia INTEGER
+);
+
+-- Inserção inicial dos valores fornecidos
+INSERT INTO config_regionais (regional, unidades, ano_referencia) 
+VALUES ('SE', 1000, 2026), ('BA', 435, 2026)
+ON CONFLICT (regional) DO UPDATE SET unidades = EXCLUDED.unidades, ano_referencia = EXCLUDED.ano_referencia;
+
 """
 
 with engine.begin() as conn:
