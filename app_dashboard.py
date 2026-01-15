@@ -21,10 +21,11 @@ def load_data(query):
 # Sidebar - Filtros
 st.sidebar.header("Filtros")
 try:
-    regionais = load_data("SELECT DISTINCT regional FROM view_inflacao_mensal")['regional'].tolist()
+    regionais_df = load_data("SELECT DISTINCT regional FROM view_inflacao_mensal")
+    regionais = regionais_df['regional'].tolist() if not regionais_df.empty else []
     regional_selecionada = st.sidebar.multiselect("Selecione as Regionais", regionais, default=regionais)
-except:
-    st.sidebar.warning("Dados de regionais não encontrados. Certifique-se de que as views foram criadas.")
+except Exception as e:
+    st.sidebar.warning(f"Erro ao carregar regionais: {e}")
     regional_selecionada = []
 
 # --- 1. VISÃO GLOBAL ---
@@ -38,7 +39,8 @@ with col1:
         if not df_global.empty:
             fig_global = px.line(df_global, x='mes', y='inflacao_global_ponderada', 
                                  title="Índice de Inflação Global (%)",
-                                 labels={'inflacao_global_ponderada': 'Inflação (%)', 'mes': 'Mês'})
+                                 labels={'inflacao_global_ponderada': 'Inflação (%)', 'mes': 'Mês'},
+                                 markers=True)
             st.plotly_chart(fig_global, use_container_width=True)
         else:
             st.info("Sem dados globais para exibir.")
@@ -48,29 +50,57 @@ with col1:
 with col2:
     st.subheader("Inflação por Regional")
     try:
-        query_reg = f"SELECT * FROM view_inflacao_mensal WHERE regional IN {tuple(regional_selecionada) if len(regional_selecionada) > 1 else \"('\"+regional_selecionada[0]+\"')\" if regional_selecionada else \"('')\"} ORDER BY mes"
-        df_reg = load_data(query_reg)
-        if not df_reg.empty:
-            fig_reg = px.line(df_reg, x='mes', y='inflacao_mensal_regional', color='regional',
-                              title="Inflação por Regional (%)",
-                              labels={'inflacao_mensal_regional': 'Inflação (%)', 'mes': 'Mês'})
-            st.plotly_chart(fig_reg, use_container_width=True)
+        if regional_selecionada:
+            # Construção segura da query para evitar erros de sintaxe
+            placeholder = ', '.join([f"'{r}'" for r in regional_selecionada])
+            query_reg = f"SELECT * FROM view_inflacao_mensal WHERE regional IN ({placeholder}) ORDER BY mes"
+            df_reg = load_data(query_reg)
+            if not df_reg.empty:
+                fig_reg = px.line(df_reg, x='mes', y='inflacao_mensal_regional', color='regional',
+                                  title="Inflação por Regional (%)",
+                                  labels={'inflacao_mensal_regional': 'Inflação (%)', 'mes': 'Mês'},
+                                  markers=True)
+                st.plotly_chart(fig_reg, use_container_width=True)
+            else:
+                st.info("Sem dados para as regionais selecionadas.")
         else:
-            st.info("Selecione ao menos uma regional com dados.")
+            st.info("Selecione ao menos uma regional.")
     except Exception as e:
         st.error(f"Erro ao carregar inflação regional: {e}")
 
 st.markdown("---")
 
-# --- 2. ANÁLISE DE INSUMOS E GRUPOS ---
+# --- 2. ANÁLISE POR CLASSE ABC ---
+st.header("📊 Inflação por Classe ABC")
+try:
+    if regional_selecionada:
+        placeholder = ', '.join([f"'{r}'" for r in regional_selecionada])
+        query_abc = f"SELECT * FROM view_inflacao_por_classe_abc WHERE regional IN ({placeholder}) ORDER BY mes, classe_abc"
+        df_abc_inflacao = load_data(query_abc)
+        if not df_abc_inflacao.empty:
+            fig_abc_bar = px.bar(df_abc_inflacao, x='mes', y='inflacao_classe', color='classe_abc',
+                                 barmode='group', title="Inflação Mensal por Classe ABC (%)",
+                                 labels={'inflacao_classe': 'Inflação (%)', 'mes': 'Mês', 'classe_abc': 'Classe'})
+            st.plotly_chart(fig_abc_bar, use_container_width=True)
+        else:
+            st.info("Sem dados de inflação por classe ABC.")
+except Exception as e:
+    st.error(f"Erro ao carregar inflação por classe ABC: {e}")
+
+st.markdown("---")
+
+# --- 3. DETALHAMENTO DE IMPACTO ---
 st.header("🔍 Detalhamento de Impacto")
-tab1, tab2, tab3 = st.tabs(["Por Insumo (Vilões)", "Por Grupo", "Curva ABC"])
+tab1, tab2, tab3 = st.tabs(["Por Insumo (Vilões)", "Por Grupo", "Distribuição Cesta"])
 
 with tab1:
     st.subheader("Maiores Impactos na Inflação (Top 10)")
     try:
         df_insumos = load_data("SELECT * FROM view_inflacao_por_insumo LIMIT 10")
-        st.dataframe(df_insumos, use_container_width=True)
+        if not df_insumos.empty:
+            st.dataframe(df_insumos.style.format({'variacao_percentual': '{:.2f}%', 'impacto_inflacao': '{:.2f}%'}), use_container_width=True)
+        else:
+            st.info("Sem dados de insumos.")
     except Exception as e:
         st.error(f"Erro ao carregar detalhes por insumo: {e}")
 
@@ -80,17 +110,23 @@ with tab2:
         df_grupo = load_data("SELECT * FROM view_inflacao_por_grupo")
         if not df_grupo.empty:
             fig_grupo = px.bar(df_grupo, x='mes', y='inflacao_grupo', color='grupo_de_insumo', barmode='group',
-                               title="Impacto por Grupo de Insumo")
+                               title="Impacto por Grupo de Insumo (%)",
+                               labels={'inflacao_grupo': 'Impacto (%)', 'mes': 'Mês'})
             st.plotly_chart(fig_grupo, use_container_width=True)
+        else:
+            st.info("Sem dados por grupo.")
     except Exception as e:
         st.error(f"Erro ao carregar detalhes por grupo: {e}")
 
 with tab3:
-    st.subheader("Distribuição da Curva ABC")
+    st.subheader("Distribuição da Curva ABC (Pesos)")
     try:
-        df_abc = load_data("SELECT classe_abc, SUM(valor_total_insumo) as valor FROM view_curva_abc_insumos GROUP BY classe_abc")
-        fig_abc = px.pie(df_abc, values='valor', names='classe_abc', title="Participação Financeira por Classe ABC")
-        st.plotly_chart(fig_abc, use_container_width=True)
+        df_abc_dist = load_data("SELECT classe_abc, SUM(valor_total_insumo) as valor FROM view_curva_abc_insumos GROUP BY classe_abc")
+        if not df_abc_dist.empty:
+            fig_abc_pie = px.pie(df_abc_dist, values='valor', names='classe_abc', title="Participação Financeira na Cesta")
+            st.plotly_chart(fig_abc_pie, use_container_width=True)
+        else:
+            st.info("Sem dados da curva ABC.")
     except Exception as e:
         st.error(f"Erro ao carregar curva ABC: {e}")
 

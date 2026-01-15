@@ -3,9 +3,10 @@ from sqlalchemy import text
 from views_sql import (
     VIEW_CURVA_ABC, 
     VIEW_CONSOLIDADO_PRECOS, 
-    VIEW_INFLACAO_MENSAL,
-    VIEW_INFLACAO_GLOBAL,
     VIEW_INFLACAO_POR_INSUMO,
+    VIEW_INFLACAO_MENSAL,
+    VIEW_INFLACAO_POR_CLASSE_ABC,
+    VIEW_INFLACAO_GLOBAL,
     VIEW_INFLACAO_POR_GRUPO,
     VIEW_INFLACAO_POR_FORNECEDOR
 )
@@ -19,9 +20,10 @@ def create_views():
             print("🧹 Removendo views antigas para evitar conflitos...")
             conn.execute(text("DROP VIEW IF EXISTS view_inflacao_por_fornecedor CASCADE;"))
             conn.execute(text("DROP VIEW IF EXISTS view_inflacao_por_grupo CASCADE;"))
-            conn.execute(text("DROP VIEW IF EXISTS view_inflacao_por_insumo CASCADE;"))
+            conn.execute(text("DROP VIEW IF EXISTS view_inflacao_por_classe_abc CASCADE;"))
             conn.execute(text("DROP VIEW IF EXISTS view_inflacao_global CASCADE;"))
             conn.execute(text("DROP VIEW IF EXISTS view_inflacao_mensal CASCADE;"))
+            conn.execute(text("DROP VIEW IF EXISTS view_inflacao_por_insumo CASCADE;"))
             conn.execute(text("DROP VIEW IF EXISTS view_consolidado_precos CASCADE;"))
             conn.execute(text("DROP VIEW IF EXISTS view_curva_abc_insumos CASCADE;"))
 
@@ -32,14 +34,17 @@ def create_views():
             conn.execute(text(VIEW_CONSOLIDADO_PRECOS))
             print("✅ View 'view_consolidado_precos' criada com sucesso!")
             
+            conn.execute(text(VIEW_INFLACAO_POR_INSUMO))
+            print("✅ View 'view_inflacao_por_insumo' criada com sucesso!")
+            
             conn.execute(text(VIEW_INFLACAO_MENSAL))
             print("✅ View 'view_inflacao_mensal' criada com sucesso!")
             
+            conn.execute(text(VIEW_INFLACAO_POR_CLASSE_ABC))
+            print("✅ View 'view_inflacao_por_classe_abc' criada com sucesso!")
+            
             conn.execute(text(VIEW_INFLACAO_GLOBAL))
             print("✅ View 'view_inflacao_global' criada com sucesso!")
-            
-            conn.execute(text(VIEW_INFLACAO_POR_INSUMO))
-            print("✅ View 'view_inflacao_por_insumo' criada com sucesso!")
             
             conn.execute(text(VIEW_INFLACAO_POR_GRUPO))
             print("✅ View 'view_inflacao_por_grupo' criada com sucesso!")

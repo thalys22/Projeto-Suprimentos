@@ -80,74 +80,12 @@ movimentos_filtrados AS (
 SELECT * FROM movimentos_filtrados;
 """
 
-VIEW_INFLACAO_MENSAL = """
-CREATE OR REPLACE VIEW view_inflacao_mensal AS
-WITH preco_medio_mensal AS (
-    SELECT 
-        DATE_TRUNC('month', data_movimento) as mes,
-        codigo_insumo,
-        regional,
-        SUM(total) / NULLIF(SUM(quantidade), 0) as preco_medio
-    FROM view_consolidado_precos
-    WHERE codigo_insumo IS NOT NULL
-    GROUP BY 1, 2, 3
-),
-variacao_precos AS (
-    SELECT 
-        *,
-        LAG(preco_medio) OVER (PARTITION BY codigo_insumo, regional ORDER BY mes) as preco_mes_anterior
-    FROM preco_medio_mensal
-),
-calculo_variacao AS (
-    SELECT 
-        *,
-        (preco_medio / NULLIF(preco_mes_anterior, 0)) - 1 as variacao_percentual
-    FROM variacao_precos
-),
-inflacao_ponderada AS (
-    SELECT 
-        cv.*,
-        abc.contribuicao_percentual as peso_cesta,
-        cv.variacao_percentual * abc.contribuicao_percentual as variacao_ponderada
-    FROM calculo_variacao cv
-    JOIN view_curva_abc_insumos abc ON cv.codigo_insumo = abc.codigo_insumo
-)
-SELECT 
-    mes,
-    regional,
-    SUM(variacao_ponderada) as inflacao_mensal_regional,
-    SUM(peso_cesta) as cobertura_cesta 
-FROM inflacao_ponderada
-GROUP BY mes, regional
-ORDER BY mes DESC, regional;
-"""
-
-VIEW_INFLACAO_GLOBAL = """
-CREATE OR REPLACE VIEW view_inflacao_global AS
-WITH dados_ponderados AS (
-    SELECT 
-        im.mes,
-        im.regional,
-        im.inflacao_mensal_regional,
-        cr.unidades
-    FROM view_inflacao_mensal im
-    JOIN config_regionais cr ON im.regional = cr.regional
-)
-SELECT 
-    mes,
-    SUM(inflacao_mensal_regional * unidades) / NULLIF(SUM(unidades), 0) as inflacao_global_ponderada,
-    SUM(unidades) as total_unidades_base
-FROM dados_ponderados
-GROUP BY mes
-ORDER BY mes DESC;
-"""
-
 VIEW_INFLACAO_POR_INSUMO = """
 CREATE OR REPLACE VIEW view_inflacao_por_insumo AS
 WITH preco_medio_mensal AS (
     SELECT 
         DATE_TRUNC('month', data_movimento) as mes,
-        codigo_insumo,
+        codigo_insumo::TEXT,
         descricao_insumo,
         regional,
         SUM(total) / NULLIF(SUM(quantidade), 0) as preco_medio
@@ -172,12 +110,58 @@ SELECT
     cv.codigo_insumo,
     cv.descricao_insumo,
     cv.regional,
-    cv.variacao_percentual,
+    cv.variacao_percentual * 100 as variacao_percentual, -- Convertido para %
     abc.contribuicao_percentual as peso_cesta,
-    cv.variacao_percentual * abc.contribuicao_percentual as impacto_inflacao
+    abc.classe_abc,
+    (cv.variacao_percentual * abc.contribuicao_percentual) * 100 as impacto_inflacao -- Convertido para %
 FROM calculo_variacao cv
-JOIN view_curva_abc_insumos abc ON cv.codigo_insumo = abc.codigo_insumo
+JOIN view_curva_abc_insumos abc ON cv.codigo_insumo = abc.codigo_insumo::TEXT
 ORDER BY cv.mes DESC, impacto_inflacao DESC;
+"""
+
+VIEW_INFLACAO_MENSAL = """
+CREATE OR REPLACE VIEW view_inflacao_mensal AS
+SELECT 
+    mes,
+    regional,
+    SUM(impacto_inflacao) as inflacao_mensal_regional,
+    SUM(peso_cesta) as cobertura_cesta 
+FROM view_inflacao_por_insumo
+GROUP BY mes, regional
+ORDER BY mes DESC, regional;
+"""
+
+VIEW_INFLACAO_POR_CLASSE_ABC = """
+CREATE OR REPLACE VIEW view_inflacao_por_classe_abc AS
+SELECT 
+    mes,
+    regional,
+    classe_abc,
+    SUM(impacto_inflacao) as inflacao_classe,
+    SUM(peso_cesta) as cobertura_classe
+FROM view_inflacao_por_insumo
+GROUP BY 1, 2, 3
+ORDER BY mes DESC, classe_abc;
+"""
+
+VIEW_INFLACAO_GLOBAL = """
+CREATE OR REPLACE VIEW view_inflacao_global AS
+WITH dados_ponderados AS (
+    SELECT 
+        im.mes,
+        im.regional,
+        im.inflacao_mensal_regional,
+        cr.unidades
+    FROM view_inflacao_mensal im
+    JOIN config_regionais cr ON im.regional = cr.regional
+)
+SELECT 
+    mes,
+    SUM(inflacao_mensal_regional * unidades) / NULLIF(SUM(unidades), 0) as inflacao_global_ponderada,
+    SUM(unidades) as total_unidades_base
+FROM dados_ponderados
+GROUP BY mes
+ORDER BY mes DESC;
 """
 
 VIEW_INFLACAO_POR_GRUPO = """
@@ -213,7 +197,7 @@ calculo_variacao AS (
 SELECT 
     f.fornecedor,
     cv.mes,
-    AVG(cv.variacao_percentual) as variacao_media_precos
+    AVG(cv.variacao_percentual) * 100 as variacao_media_precos -- Convertido para %
 FROM calculo_variacao cv
 JOIN fornecedores f ON cv.codigo_fornecedor = f.codigo_fornecedor::TEXT
 GROUP BY 1, 2
