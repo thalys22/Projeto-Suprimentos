@@ -15,6 +15,17 @@ def create_views():
     try:
         # O engine já está configurado para ler do .env
         with engine.begin() as conn:
+            # Remove as views na ordem inversa de dependência para evitar erros de cascata
+            print("🧹 Removendo views antigas para evitar conflitos...")
+            conn.execute(text("DROP VIEW IF EXISTS view_inflacao_por_fornecedor CASCADE;"))
+            conn.execute(text("DROP VIEW IF EXISTS view_inflacao_por_grupo CASCADE;"))
+            conn.execute(text("DROP VIEW IF EXISTS view_inflacao_por_insumo CASCADE;"))
+            conn.execute(text("DROP VIEW IF EXISTS view_inflacao_global CASCADE;"))
+            conn.execute(text("DROP VIEW IF EXISTS view_inflacao_mensal CASCADE;"))
+            conn.execute(text("DROP VIEW IF EXISTS view_consolidado_precos CASCADE;"))
+            conn.execute(text("DROP VIEW IF EXISTS view_curva_abc_insumos CASCADE;"))
+
+            print("🏗 Criando novas views...")
             conn.execute(text(VIEW_CURVA_ABC))
             print("✅ View 'view_curva_abc_insumos' criada com sucesso!")
             
