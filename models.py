@@ -100,25 +100,29 @@ INSERT INTO config_regionais (regional, unidades, ano_referencia)
 VALUES ('SE', 1000, 2026), ('BA', 435, 2026)
 ON CONFLICT (regional) DO UPDATE SET unidades = EXCLUDED.unidades, ano_referencia = EXCLUDED.ano_referencia;
 
--- Inserção inicial das metas INCC-M (2025)
+-- Inserção das metas INCC-M (Valores de referência reduzidos em 50% conforme solicitado)
+-- Ex: dez/25 ref 0.21% -> meta 0.105% (0.00105)
 INSERT INTO metas_incc (mes_referencia, evolucao_mensal, acumulado_12_meses) VALUES
-('2025-12-01', 0.0021, 0.0610),
-('2025-11-01', 0.0028, 0.0641),
-('2025-10-01', 0.0021, 0.0658),
-('2025-09-01', 0.0021, 0.0707),
-('2025-08-01', 0.0070, 0.0749),
-('2025-07-01', 0.0091, 0.0743),
-('2025-06-01', 0.0096, 0.0719),
-('2025-05-01', 0.0026, 0.0717),
-('2025-04-01', 0.0059, 0.0752),
-('2025-03-01', 0.0038, 0.0732),
-('2025-02-01', 0.0051, 0.0718),
-('2025-01-01', 0.0071, 0.0685)
-ON CONFLICT (mes_referencia) DO NOTHING;
+('2025-12-01', 0.00105, 0.0305),
+('2025-11-01', 0.0014,  0.03205),
+('2025-10-01', 0.00105, 0.0329),
+('2025-09-01', 0.00105, 0.03535),
+('2025-08-01', 0.0035,  0.03745),
+('2025-07-01', 0.00455, 0.03715),
+('2025-06-01', 0.0048,  0.03595),
+('2025-05-01', 0.0013,  0.03585),
+('2025-04-01', 0.00295, 0.0376),
+('2025-03-01', 0.0019,  0.0366),
+('2025-02-01', 0.00255, 0.0359),
+('2025-01-01', 0.00355, 0.03425),
+('2024-12-01', 0.00255, 0.0317)
+ON CONFLICT (mes_referencia) DO UPDATE SET 
+    evolucao_mensal = EXCLUDED.evolucao_mensal, 
+    acumulado_12_meses = EXCLUDED.acumulado_12_meses;
 
 """
 
 with engine.begin() as conn:
     conn.execute(text(sql))
 
-print("Tabelas e dados iniciais criados!")
+print("Tabelas e metas (50%) atualizadas!")
