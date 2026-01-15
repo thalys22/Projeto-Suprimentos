@@ -4,7 +4,10 @@ from views_sql import (
     VIEW_CURVA_ABC, 
     VIEW_CONSOLIDADO_PRECOS, 
     VIEW_INFLACAO_MENSAL,
-    VIEW_INFLACAO_GLOBAL
+    VIEW_INFLACAO_GLOBAL,
+    VIEW_INFLACAO_POR_INSUMO,
+    VIEW_INFLACAO_POR_GRUPO,
+    VIEW_INFLACAO_POR_FORNECEDOR
 )
 
 def create_views():
@@ -23,6 +26,15 @@ def create_views():
             
             conn.execute(text(VIEW_INFLACAO_GLOBAL))
             print("✅ View 'view_inflacao_global' criada com sucesso!")
+            
+            conn.execute(text(VIEW_INFLACAO_POR_INSUMO))
+            print("✅ View 'view_inflacao_por_insumo' criada com sucesso!")
+            
+            conn.execute(text(VIEW_INFLACAO_POR_GRUPO))
+            print("✅ View 'view_inflacao_por_grupo' criada com sucesso!")
+            
+            conn.execute(text(VIEW_INFLACAO_POR_FORNECEDOR))
+            print("✅ View 'view_inflacao_por_fornecedor' criada com sucesso!")
     except Exception as e:
         # Se o banco não estiver rodando no sandbox, capturamos o erro de conexão
         # mas confirmamos que o código está pronto.

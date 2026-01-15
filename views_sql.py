@@ -157,3 +157,61 @@ FROM dados_ponderados
 GROUP BY mes
 ORDER BY mes DESC;
 """
+
+VIEW_INFLACAO_POR_INSUMO = """
+CREATE OR REPLACE VIEW view_inflacao_por_insumo AS
+WITH base_calculo AS (
+    -- Pega a variação ponderada de cada insumo por mês
+    SELECT 
+        DATE_TRUNC('month', cp.data_movimento) as mes,
+        cp.codigo_insumo,
+        cp.descricao_insumo,
+        cp.regional,
+        (cp.preco_unitario / NULLIF(LAG(cp.preco_unitario) OVER (PARTITION BY cp.codigo_insumo, cp.regional ORDER BY cp.data_movimento), 0)) - 1 as variacao_percentual,
+        abc.contribuicao_percentual as peso_cesta
+    FROM view_consolidado_precos cp
+    JOIN view_curva_abc_insumos abc ON cp.codigo_insumo = abc.codigo_insumo
+)
+SELECT 
+    codigo_insumo,
+    descricao_insumo,
+    regional,
+    AVG(variacao_percentual) as variacao_media_periodo,
+    SUM(variacao_percentual * peso_cesta) as impacto_acumulado_inflacao,
+    peso_cesta
+FROM base_calculo
+GROUP BY 1, 2, 3, 6
+ORDER BY impacto_acumulado_inflacao DESC;
+"""
+
+VIEW_INFLACAO_POR_GRUPO = """
+CREATE OR REPLACE VIEW view_inflacao_por_grupo AS
+WITH inflacao_insumo AS (
+    SELECT 
+        mes,
+        codigo_insumo,
+        variacao_ponderada
+    FROM view_inflacao_mensal_detalhada -- Nota: Precisaremos ajustar a view mensal para expor o detalhe ou usar a lógica aqui
+)
+SELECT 
+    gi.grupo_de_insumo,
+    DATE_TRUNC('month', cp.data_movimento) as mes,
+    SUM( (cp.preco_unitario / NULLIF(LAG(cp.preco_unitario) OVER (PARTITION BY cp.codigo_insumo ORDER BY cp.data_movimento), 0) - 1) * abc.contribuicao_percentual ) as inflacao_grupo
+FROM view_consolidado_precos cp
+JOIN grupo_insumo gi ON cp.codigo_insumo = gi.codigo_insumo
+JOIN view_curva_abc_insumos abc ON cp.codigo_insumo = abc.codigo_insumo
+GROUP BY 1, 2
+ORDER BY mes DESC, inflacao_grupo DESC;
+"""
+
+VIEW_INFLACAO_POR_FORNECEDOR = """
+CREATE OR REPLACE VIEW view_inflacao_por_fornecedor AS
+SELECT 
+    f.fornecedor,
+    DATE_TRUNC('month', cp.data_movimento) as mes,
+    AVG((cp.preco_unitario / NULLIF(LAG(cp.preco_unitario) OVER (PARTITION BY cp.codigo_insumo, f.codigo_fornecedor ORDER BY cp.data_movimento), 0)) - 1) as variacao_media_precos
+FROM view_consolidado_precos cp
+JOIN fornecedores f ON cp.codigo_fornecedor = f.codigo_fornecedor
+GROUP BY 1, 2
+ORDER BY mes DESC, variacao_media_precos DESC;
+"""
