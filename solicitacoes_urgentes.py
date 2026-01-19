@@ -53,7 +53,18 @@ def start():
         "Cód. Fornecedor", "Previsão de entrega", "Data entrega na obra",
         "N° da Nota fiscal", "Unidade de movimento", "urgencia"
     ]
+    
+    # Filtrar apenas colunas que existem no DataFrame
+    COLUNAS = [col for col in COLUNAS if col in df.columns]
+    
     df = df[COLUNAS]
+    
+    # Converter strings vazias em NaN para campos numéricos
+    if "Cód. Fornecedor" in df.columns:
+        df["Cód. Fornecedor"] = pd.to_numeric(df["Cód. Fornecedor"], errors='coerce')
+    if "N° do Pedido" in df.columns:
+        df["N° do Pedido"] = pd.to_numeric(df["N° do Pedido"], errors='coerce')
+    
     df = df.rename(columns={
         "Nº da Solicitação": "numero_solicitacao",
         "Data da solicitação": "data_solicitacao",
@@ -61,7 +72,11 @@ def start():
         "Cód. Fornecedor": "codigo_fornecedor",
         "Data do pedido": "data_pedido",
         "Data entrega na obra": "data_entrega_na_obra",
-        "Obra":"centro_custo"
+        "Obra": "centro_custo",
+        "N° do Pedido": "numero_pedido",
+        "Comprador": "comprador",
+        "N° da Nota fiscal": "nota_fiscal",
+        "Unidade de movimento": "unidade"
     })
     return df
 

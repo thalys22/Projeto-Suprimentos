@@ -21,16 +21,14 @@ CREATE TABLE IF NOT EXISTS nf_movimentos (
     movimento TEXT,
     codigo_fornecedor INTEGER,
     quantidade NUMERIC,
-    unidade TEXT,
+    un TEXT,
     preco_unitario NUMERIC,
     total NUMERIC,
     data_movimento TIMESTAMP,
     centro_custo TEXT,
     codigo_insumo INTEGER,
     descricao_insumo TEXT,
-    regional TEXT,
-    FOREIGN KEY (codigo_fornecedor) REFERENCES fornecedores (codigo_fornecedor),
-    FOREIGN KEY (codigo_insumo) REFERENCES grupo_insumo (codigo_insumo)
+    regional TEXT
 );
 
 CREATE TABLE IF NOT EXISTS nfse_medicoes (
@@ -43,8 +41,7 @@ CREATE TABLE IF NOT EXISTS nfse_medicoes (
     data_movimento TIMESTAMP,
     centro_custo TEXT,
     codigo_fornecedor INTEGER,
-    regional TEXT,
-    FOREIGN KEY (codigo_fornecedor) REFERENCES fornecedores (codigo_fornecedor)
+    regional TEXT
 );
 
 CREATE TABLE IF NOT EXISTS base_cesta_apropriacoes (
@@ -56,8 +53,7 @@ CREATE TABLE IF NOT EXISTS base_cesta_apropriacoes (
     codigo_insumo INTEGER,
     descricao_insumo TEXT,
     centro_custo TEXT,
-    regional TEXT,
-    FOREIGN KEY (codigo_insumo) REFERENCES grupo_insumo (codigo_insumo)
+    regional TEXT
 );
 
 CREATE TABLE IF NOT EXISTS solicitacoes (
@@ -78,8 +74,7 @@ CREATE TABLE IF NOT EXISTS solicitacoes (
     dias INTEGER,
     urgencia TEXT,
     centro_custo TEXT,
-    FOREIGN KEY (codigo_fornecedor) REFERENCES fornecedores (codigo_fornecedor),
-    FOREIGN KEY (codigo_insumo) REFERENCES grupo_insumo (codigo_insumo)
+    unidade TEXT
 
 );
 

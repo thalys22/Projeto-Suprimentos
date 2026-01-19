@@ -2,6 +2,7 @@
 
 from db import engine
 from deduplication import filter_new_rows
+from constraint_handler import validate_all_foreign_keys
 
 from parse_NF import parse_excel_movimentos
 from parse_NFSE import parse_excel_medicoes
@@ -80,6 +81,13 @@ def insert_table(table_name: str, config: dict):
         print(f"⚠ {table_name}: nenhuma linha nova")
         return
 
+    # 5️⃣ Validar Foreign Keys antes de inserir
+    df_new = validate_all_foreign_keys(df_new, table_name)
+    
+    if df_new.empty:
+        print(f"⚠ {table_name}: nenhuma linha com referências válidas")
+        return
+
     df_new.to_sql(
         table_name,
         engine,
@@ -87,9 +95,9 @@ def insert_table(table_name: str, config: dict):
         index=False,
     )
 
-    # 5️⃣ Log final
+    # 6️⃣ Log final
     print(
-        f"✔ {table_name}: inseridas={inserted} | descartadas={discarded}"
+        f"✔ {table_name}: inseridas={len(df_new)} | descartadas={discarded}"
     )
 
 
