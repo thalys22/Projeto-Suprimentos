@@ -1,0 +1,20 @@
+# Variáveis de ambiente (Contém senhas!)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+env/
+venv/
+.venv/
+
+# Dados e arquivos temporários do Excel
+data/
+data/base/*.xlsx
+!data/base/.gitkeep
+~$*.xlsx
+
+# IDEs
+.vscode/
+.idea/
